@@ -1,6 +1,6 @@
 # Collaborative To-Do List Application
 
-A command-line multi-user to-do list application built in Java, demonstrating object-oriented programming principles and thread-based concurrency.
+A multi-user to-do list application built in Java with a React frontend, demonstrating object-oriented programming principles, thread-based concurrency, and modern web development.
 
 ## Features
 
@@ -11,6 +11,28 @@ A command-line multi-user to-do list application built in Java, demonstrating ob
 - **Task Assignment**: Assign tasks to specific users
 - **Status Tracking**: Track task status (Pending, In Progress, Completed)
 - **Persistent Storage**: Data is saved to files and persists between sessions
+- **Modern Web UI**: Beautiful React-based frontend with real-time updates
+
+## Quick Start
+
+### Running with React Frontend (Recommended)
+
+1. **Start the API Server** (Terminal 1):
+```bash
+./run-api.sh
+```
+The API server will start on http://localhost:8080
+
+2. **Start the React Frontend** (Terminal 2):
+```bash
+./run-frontend.sh
+```
+The frontend will start on http://localhost:3000
+
+### Running CLI Version
+```bash
+./run.sh
+```
 
 ## Project Structure
 
@@ -34,14 +56,39 @@ src/
 │   ├── UserSession.java  - Individual user session thread (extends Thread)
 │   └── SessionManager.java - Manages multiple concurrent user sessions
 │
+├── api/             # REST API layer
+│   └── ApiServer.java    - HTTP REST API for frontend communication
+│
 └── cli/             # Command-line interface
     └── TodoApp.java      - Main application entry point
+
+frontend/            # React frontend application
+├── src/
+│   ├── App.js       - Main React component
+│   ├── index.js     - Entry point
+│   └── index.css    - Styles
+└── public/
+    └── index.html   - HTML template
 
 data/                # Data storage directory (auto-created)
 ├── tasks.dat        - Persisted tasks
 ├── users.dat        - Persisted users
 └── categories.dat   - Persisted categories
 ```
+
+## REST API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/tasks | Get all tasks |
+| GET | /api/tasks/{id} | Get task by ID |
+| POST | /api/tasks | Create a new task |
+| PUT | /api/tasks/{id} | Update a task |
+| DELETE | /api/tasks/{id} | Delete a task |
+| GET | /api/users | Get all users |
+| GET | /api/users/{id} | Get user by ID |
+| POST | /api/users | Create a new user |
+| GET | /api/categories | Get all categories |
 
 ## OOP Principles Demonstrated
 
