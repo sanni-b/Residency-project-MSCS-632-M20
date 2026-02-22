@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import model.Category;
+import model.Priority;
 import model.Task;
 import model.TaskStatus;
 import model.User;
@@ -125,12 +126,24 @@ public class ApiServer {
         String description = extractJsonValue(body, "description");
         String categoryId = extractJsonValue(body, "categoryId");
         String assignedUserId = extractJsonValue(body, "assignedUserId");
+        String priorityStr = extractJsonValue(body, "priority");
 
         Task task;
         if (categoryId != null || assignedUserId != null) {
             task = taskManager.createTask(title, description, categoryId, assignedUserId);
         } else {
             task = taskManager.createTask(title, description);
+        }
+
+        // Set priority if provided
+        if (priorityStr != null && !priorityStr.isEmpty()) {
+            try {
+                Priority priority = Priority.valueOf(priorityStr.toUpperCase());
+                task.setPriority(priority);
+                dataStore.saveTask(task);
+            } catch (IllegalArgumentException e) {
+                // Invalid priority, keep default
+            }
         }
 
         sendResponse(exchange, 201, taskToJson(task));
@@ -150,6 +163,7 @@ public class ApiServer {
         String status = extractJsonValue(body, "status");
         String categoryId = extractJsonValue(body, "categoryId");
         String assignedUserId = extractJsonValue(body, "assignedUserId");
+        String priorityStr = extractJsonValue(body, "priority");
 
         if (title != null) {
             taskManager.updateTaskTitle(taskId, title);
@@ -163,6 +177,15 @@ public class ApiServer {
         }
         if (categoryId != null) {
             taskManager.setTaskCategory(taskId, categoryId);
+        }
+        if (priorityStr != null && !priorityStr.isEmpty()) {
+            try {
+                Priority priority = Priority.valueOf(priorityStr.toUpperCase());
+                taskOpt.get().setPriority(priority);
+                dataStore.saveTask(taskOpt.get());
+            } catch (IllegalArgumentException e) {
+                // Invalid priority, ignore
+            }
         }
         if (assignedUserId != null) {
             taskManager.assignTask(taskId, assignedUserId);
@@ -201,6 +224,9 @@ public class ApiServer {
                 }
             } else if ("POST".equals(method)) {
                 handleCreateUser(exchange);
+            } else if ("DELETE".equals(method)) {
+                String userId = path.substring("/api/users/".length());
+                handleDeleteUser(exchange, userId);
             } else {
                 sendResponse(exchange, 405, "{\"error\": \"Method not allowed\"}");
             }
@@ -243,6 +269,15 @@ public class ApiServer {
         }
     }
 
+    private void handleDeleteUser(HttpExchange exchange, String userId) throws IOException {
+        boolean deleted = userManager.deleteUser(userId);
+        if (deleted) {
+            sendResponse(exchange, 200, "{\"message\": \"User deleted\"}");
+        } else {
+            sendResponse(exchange, 404, "{\"error\": \"User not found\"}");
+        }
+    }
+
     private void handleCategories(HttpExchange exchange) throws IOException {
         addCorsHeaders(exchange);
         String method = exchange.getRequestMethod();
@@ -268,13 +303,16 @@ public class ApiServer {
     // JSON Helpers
     private String taskToJson(Task task) {
         return String.format(
-            "{\"id\":\"%s\",\"title\":\"%s\",\"description\":\"%s\",\"categoryId\":%s,\"assignedUserId\":%s,\"status\":\"%s\",\"createdAt\":\"%s\",\"updatedAt\":\"%s\",\"completedAt\":%s}",
+            "{\"id\":\"%s\",\"title\":\"%s\",\"description\":\"%s\",\"categoryId\":%s,\"assignedUserId\":%s,\"status\":\"%s\",\"priority\":\"%s\",\"dueDate\":%s,\"isOverdue\":%s,\"createdAt\":\"%s\",\"updatedAt\":\"%s\",\"completedAt\":%s}",
             escapeJson(task.getId()),
             escapeJson(task.getTitle()),
             escapeJson(task.getDescription()),
             task.getCategoryId() != null ? "\"" + escapeJson(task.getCategoryId()) + "\"" : "null",
             task.getAssignedUserId() != null ? "\"" + escapeJson(task.getAssignedUserId()) + "\"" : "null",
             task.getStatus().name(),
+            task.getPriority() != null ? task.getPriority().name() : "MEDIUM",
+            task.getDueDate() != null ? "\"" + task.getDueDate().toString() + "\"" : "null",
+            task.isOverdue(),
             task.getCreatedAt().toString(),
             task.getUpdatedAt().toString(),
             task.getCompletedAt() != null ? "\"" + task.getCompletedAt().toString() + "\"" : "null"

@@ -20,6 +20,8 @@ public class Task implements Serializable {
     private String categoryId;
     private String assignedUserId;
     private TaskStatus status;
+    private Priority priority;
+    private LocalDateTime dueDate;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
@@ -34,6 +36,7 @@ public class Task implements Serializable {
         this.title = title;
         this.description = description;
         this.status = TaskStatus.PENDING;
+        this.priority = Priority.MEDIUM;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -42,7 +45,8 @@ public class Task implements Serializable {
      * Creates a task with all parameters (used for data loading).
      */
     public Task(String id, String title, String description, String categoryId,
-                String assignedUserId, TaskStatus status, LocalDateTime createdAt,
+                String assignedUserId, TaskStatus status, Priority priority,
+                LocalDateTime dueDate, LocalDateTime createdAt,
                 LocalDateTime updatedAt, LocalDateTime completedAt) {
         this.id = id;
         this.title = title;
@@ -50,6 +54,8 @@ public class Task implements Serializable {
         this.categoryId = categoryId;
         this.assignedUserId = assignedUserId;
         this.status = status;
+        this.priority = priority != null ? priority : Priority.MEDIUM;
+        this.dueDate = dueDate;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.completedAt = completedAt;
@@ -92,6 +98,14 @@ public class Task implements Serializable {
         return completedAt;
     }
 
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public LocalDateTime getDueDate() {
+        return dueDate;
+    }
+
     // Setters with automatic timestamp update
     public void setTitle(String title) {
         this.title = title;
@@ -111,6 +125,24 @@ public class Task implements Serializable {
     public void setAssignedUserId(String assignedUserId) {
         this.assignedUserId = assignedUserId;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void setDueDate(LocalDateTime dueDate) {
+        this.dueDate = dueDate;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Checks if task is overdue.
+     * @return true if past due date and not completed
+     */
+    public boolean isOverdue() {
+        return dueDate != null && !isCompleted() && LocalDateTime.now().isAfter(dueDate);
     }
 
     /**

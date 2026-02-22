@@ -1,6 +1,7 @@
 package storage;
 
 import model.Category;
+import model.Priority;
 import model.Task;
 import model.TaskStatus;
 import model.User;
@@ -307,7 +308,7 @@ public class FileDataStore implements DataStore {
     // ==================== Serialization Methods ====================
 
     private String serializeTask(Task task) {
-        // Format: id|title|description|categoryId|assignedUserId|status|createdAt|updatedAt|completedAt
+        // Format: id|title|description|categoryId|assignedUserId|status|priority|dueDate|createdAt|updatedAt|completedAt
         return String.join("|",
                 escape(task.getId()),
                 escape(task.getTitle()),
@@ -315,6 +316,8 @@ public class FileDataStore implements DataStore {
                 escape(task.getCategoryId()),
                 escape(task.getAssignedUserId()),
                 task.getStatus().name(),
+                task.getPriority() != null ? task.getPriority().name() : "MEDIUM",
+                task.getDueDate() != null ? task.getDueDate().format(FORMATTER) : "null",
                 task.getCreatedAt().format(FORMATTER),
                 task.getUpdatedAt().format(FORMATTER),
                 task.getCompletedAt() != null ? task.getCompletedAt().format(FORMATTER) : "null"
@@ -324,6 +327,8 @@ public class FileDataStore implements DataStore {
     private Task deserializeTask(String line) {
         try {
             String[] parts = line.split("\\|", -1);
+
+            // Handle both old format (9 parts) and new format (11 parts)
             if (parts.length < 9) return null;
 
             String id = unescape(parts[0]);
@@ -332,14 +337,35 @@ public class FileDataStore implements DataStore {
             String categoryId = unescape(parts[3]);
             String assignedUserId = unescape(parts[4]);
             TaskStatus status = TaskStatus.valueOf(parts[5]);
-            LocalDateTime createdAt = LocalDateTime.parse(parts[6], FORMATTER);
-            LocalDateTime updatedAt = LocalDateTime.parse(parts[7], FORMATTER);
-            LocalDateTime completedAt = "null".equals(parts[8]) ? null : LocalDateTime.parse(parts[8], FORMATTER);
+
+            Priority priority = Priority.MEDIUM;
+            LocalDateTime dueDate = null;
+            LocalDateTime createdAt;
+            LocalDateTime updatedAt;
+            LocalDateTime completedAt;
+
+            if (parts.length >= 11) {
+                // New format with priority and dueDate
+                try {
+                    priority = Priority.valueOf(parts[6]);
+                } catch (IllegalArgumentException e) {
+                    priority = Priority.MEDIUM;
+                }
+                dueDate = "null".equals(parts[7]) ? null : LocalDateTime.parse(parts[7], FORMATTER);
+                createdAt = LocalDateTime.parse(parts[8], FORMATTER);
+                updatedAt = LocalDateTime.parse(parts[9], FORMATTER);
+                completedAt = "null".equals(parts[10]) ? null : LocalDateTime.parse(parts[10], FORMATTER);
+            } else {
+                // Old format without priority and dueDate
+                createdAt = LocalDateTime.parse(parts[6], FORMATTER);
+                updatedAt = LocalDateTime.parse(parts[7], FORMATTER);
+                completedAt = "null".equals(parts[8]) ? null : LocalDateTime.parse(parts[8], FORMATTER);
+            }
 
             return new Task(id, title, description,
                     categoryId.isEmpty() ? null : categoryId,
                     assignedUserId.isEmpty() ? null : assignedUserId,
-                    status, createdAt, updatedAt, completedAt);
+                    status, priority, dueDate, createdAt, updatedAt, completedAt);
         } catch (Exception e) {
             System.err.println("Error deserializing task: " + e.getMessage());
             return null;
