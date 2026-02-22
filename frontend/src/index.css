@@ -644,6 +644,11 @@ body::before {
   font-size: 1rem;
 }
 
+.action-btn.pending {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
 .action-btn.complete {
   background: rgba(16, 185, 129, 0.15);
   color: var(--success);
@@ -661,6 +666,12 @@ body::before {
 
 .action-btn:hover {
   transform: scale(1.15);
+}
+
+.action-btn.pending:hover {
+  background: #a855f7;
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
 }
 
 .action-btn.complete:hover {
